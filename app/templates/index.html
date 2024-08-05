@@ -6,7 +6,13 @@
 </head>
 <body style="Text-align: center">
 
-  <h2> Trivia VS AI is running :)</h2>
+  <h1> Trivia VS AI is running :)</h1>
+
+    {% if profile_picture %}
+        <img src="{{ url_for('userProfile_service_bp.uploaded_file', filename=profile_picture) }}" alt="Profile Picture" style="max-width: 200px; height: auto;">
+    {% else %}
+        <p>No profile picture available.</p>
+    {% endif %}
 
 </body>
 </html>
