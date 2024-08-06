@@ -108,11 +108,47 @@ def multipart_validator(required_fields):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            missing_fields = [field for field in required_fields if field not in request.form and field not in request.files]
+            missing_fields = [field for field in required_fields if field not in request.form
+                              and field not in request.files]
             if missing_fields:
                 msg = f"Missing fields: {', '.join(missing_fields)}"
                 logger.error(msg)
                 return jsonify({"message": msg}), 400
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def form_data_validator(schema):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            form_data = request.form.to_dict()
+            form_data['profile_picture'] = (
+                request.files.get('profile_picture').filename
+                if 'profile_picture' in request.files and request.files['profile_picture'].filename
+                else 'default.jpg'
+            )
+
+            if 'level' in form_data:
+                try:
+                    form_data['level'] = int(form_data['level'])
+                except (ValueError, TypeError):
+                    form_data['level'] = None
+
+            if 'experience_points' in form_data:
+                try:
+                    form_data['experience_points'] = int(form_data['experience_points'])
+                except (ValueError, TypeError):
+                    form_data['experience_points'] = None
+
+            try:
+                validate(form_data, schema)
+            except jsonschema.ValidationError as e:
+                msg = "Error: Invalid form data"
+                logger.log(level=40, msg=msg)
+                return jsonify({"message": msg, "details": e.message}), 400
+
             return func(*args, **kwargs)
         return wrapper
     return decorator

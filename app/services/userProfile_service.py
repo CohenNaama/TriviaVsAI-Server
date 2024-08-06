@@ -1,114 +1,73 @@
-from flask import Blueprint, jsonify, request, send_from_directory, current_app, render_template
-from flask_jwt_extended import jwt_required
-from app.models.userProfile import UserProfile, db
-from app.models.user import User
-from app.middleware.jwt_decorators import permission_required, multipart_validator
+from flask import Blueprint
+from app.dal.userProfile_dal import UserProfileDAL
 from app.middleware.helpers import save_profile_picture
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
 
 
-userProfile_service_bp = Blueprint('userProfile_service_bp', __name__)
-
-
-@userProfile_service_bp.route('/users/profile', methods=['GET'])
-@jwt_required()
-def get_users_profiles():
+def get_all_profiles():
+    """Retrieve all user profiles."""
     try:
-        users_profiles = UserProfile.query.all()
-
-        if not users_profiles:
-            return jsonify([], 200)
-        users_profile_list = [user.to_dict() for user in users_profiles]
-        return jsonify(users_profile_list), 200
-
+        users_profiles = UserProfileDAL.get_all_profiles()
+        return [profile.to_dict() for profile in users_profiles], 200
     except Exception as e:
         msg = f'Failed to return users list! \nError: {str(e)}'
         logger.error(msg)
-        return jsonify({
-            'status': 'failed',
-            'message': msg,
-        }), 500
+        return {'status': 'failed', 'message': msg}, 500
 
 
-@userProfile_service_bp.route('/users/<int:user_id>/profile', methods=['GET'])
-@jwt_required()
 def get_user_profile_by_id(user_id):
+    """Retrieve a user profile by user ID."""
     try:
-        user_profile = UserProfile.query.filter_by(id=user_id).first()
+        user_profile = UserProfileDAL.get_profile_by_user_id(user_id)
         if not user_profile:
-            msg = f"User Id:{user_id} does not found"
+            msg = f"User ID: {user_id} not found"
             logger.warn(msg)
-            return jsonify(None, {"message": msg}), 404,
+            return None, {"message": msg}, 404
 
-        return jsonify(user_profile.to_dict()), 200
-
+        return user_profile.to_dict(), 200
     except Exception as e:
-        msg = f"Failed to return user Id:{user_id}. \nError: {str(e)}"
+        msg = f"Failed to return user ID: {user_id}. \nError: {str(e)}"
         logger.error(msg)
-        return jsonify({
-            'status': 'failed',
-            'message': msg,
-        }), 500
+        return {'status': 'failed', 'message': msg}, 500
 
 
-@userProfile_service_bp.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
-
-
-@userProfile_service_bp.route('/profile/<int:user_id>')
-def view_profile(user_id):
-    user = User.query.get(user_id)
-    if user and user.profile:
-        print(f"Profile Picture Filename: {user.profile.profile_picture}")
-        return render_template('index.html', profile_picture=user.profile.profile_picture, user_id=user_id)
-    else:
-        return "User or profile not found", 404
-
-
-@userProfile_service_bp.route('/users/<int:user_id>/profile', methods=['PATCH'])
-@jwt_required()
-@permission_required()
-@multipart_validator(['profile_picture'])
-def update_user_profile(user_id):
+def update_user_profile(user_id, form_data, files):
+    """Update a user profile."""
     try:
-        user = User.query.get(user_id)
+        user_profile = UserProfileDAL.get_profile_by_user_id(user_id)
 
-        if user is None:
-            return jsonify({"status": "fail", "message": "User not found"}), 404
+        if user_profile is None:
+            return {"status": "fail", "message": "User profile not found"}, 404
 
-        profile_picture = request.files.get('profile_picture')
-        level = request.form.get('level', type=int)
-        experience_points = request.form.get('experience_points', type=int)
+        profile_picture = files.get('profile_picture')
+        level = form_data.get('level', type=int)
+        experience_points = form_data.get('experience_points', type=int)
 
         if profile_picture:
             filename = save_profile_picture(profile_picture)
-            if filename:
-                user.profile.profile_picture = filename
+        else:
+            filename = user_profile.profile_picture
 
-        if level is not None:
-            user.profile.level = level
-        if experience_points is not None:
-            user.profile.experience_points = experience_points
+        UserProfileDAL.update_user_profile(
+            user_profile=user_profile,
+            profile_picture=filename,
+            level=level,
+            experience_points=experience_points
+        )
 
-        db.session.commit()
+        UserProfileDAL.commit_changes()
 
         msg = f"User ID: {user_id} details updated successfully."
         logger.info(msg)
-        return jsonify({
-            'status': 'success',
-            'message': msg,
-            'data': user.profile.to_dict(),
-        }), 200
+        return {'status': 'success', 'message': msg}, 204
 
     except SQLAlchemyError as e:
-        db.session.rollback()
         msg = f"Database error during user update: {str(e)}"
         logger.error(msg)
-        return jsonify({'status': 'failed', 'message': msg}), 500
+        return {'status': 'failed', 'message': msg}, 500
 
     except Exception as e:
         msg = f"An unexpected error occurred during user update: {str(e)}"
         logger.error(msg)
-        return jsonify({'status': 'failed', 'message': msg}), 500
+        return {'status': 'failed', 'message': msg}, 500

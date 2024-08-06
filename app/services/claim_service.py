@@ -1,14 +1,22 @@
-from app.models.claim import Claim, db
+from app.dal.claim_dal import ClaimDAL
+from app.logging_config import logger
 
 
 def create_claims_for_user(user_id, username, email, role_name):
     claims_list = [
-        {'type': 'user_id', 'value': str(user_id), 'user_id': user_id},
-        {'type': 'username', 'value': username, 'user_id': user_id},
-        {'type': 'email', 'value': email, 'user_id': user_id},
-        {'type': 'role', 'value': role_name, 'user_id': user_id},
+        {'type': 'user_id', 'value': str(user_id)},
+        {'type': 'username', 'value': username},
+        {'type': 'email', 'value': email},
+        {'type': 'role', 'value': role_name},
     ]
-    for item in claims_list:
-        claim = Claim(type=item['type'], value=item['value'], user_id=item['user_id'])
-        db.session.add(claim)
-    db.session.flush()
+
+    try:
+        for item in claims_list:
+            ClaimDAL.create_claim(type=item['type'], value=item['value'], user_id=user_id)
+
+        ClaimDAL.commit_changes()
+        logger.info(f"Claims for user ID {user_id} created successfully.")
+    except Exception as e:
+        msg = f"Error creating claims for user ID {user_id}: {str(e)}"
+        logger.error(msg)
+        raise e  

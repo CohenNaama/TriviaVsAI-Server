@@ -95,14 +95,6 @@ flask run
 
    Access the application at http://127.0.0.1:5000.
 
-## Contribution Guidelines
-We welcome contributions! Please open an issue or submit a pull request.
-
-### Code of Conduct
-* Be respectful to others.
-* Use inclusive language.
-* Provide constructive feedback.
-* 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

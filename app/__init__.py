@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from app.config import Config
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
@@ -22,6 +22,10 @@ def create_app(config_class=Config):
         migrate.init_app(app, db)
         jwt.init_app(app)
 
+        @app.errorhandler(413)
+        def request_entity_too_large(error):
+            return jsonify({"message": "The uploaded file is too large. Please upload a file smaller than 16MB."}), 413
+
         from app.models.user import User
         from app.models.role import Role
         from app.models.claim import Claim
@@ -36,14 +40,14 @@ def create_app(config_class=Config):
             db.create_all()
 
         from app.routes.route import main
-        from app.services.role_service import role_service_bp
-        from app.services.user_service import user_service_bp
-        from app.services.userProfile_service import userProfile_service_bp
+        from app.routes.user_routes import user_bp
+        from app.routes.userProfile_routes import userProfile_bp
+        from app.routes.role_routes import role_bp
 
         app.register_blueprint(main)
-        app.register_blueprint(role_service_bp)
-        app.register_blueprint(user_service_bp)
-        app.register_blueprint(userProfile_service_bp)
+        app.register_blueprint(user_bp)
+        app.register_blueprint(userProfile_bp)
+        app.register_blueprint(role_bp)
 
         logger.info("Application setup complete.")
         return app
