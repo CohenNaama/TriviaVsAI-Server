@@ -1,3 +1,10 @@
+"""
+Initialize the Flask application with configurations, database, and JWT.
+
+This module sets up the Flask app, configures the database and JWT,
+and registers all necessary blueprints and error handlers.
+"""
+
 from flask import Flask, jsonify
 from app.config import Config
 from dotenv import load_dotenv
@@ -5,6 +12,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from .logging_config import logger
+
 
 load_dotenv()
 
@@ -14,6 +22,15 @@ jwt = JWTManager()
 
 
 def create_app(config_class=Config):
+    """
+    Create and configure the Flask application.
+
+    Args:
+        config_class: The configuration class to use for the app.
+
+    Returns:
+        app: The configured Flask application instance.
+    """
     try:
         app = Flask(__name__, template_folder='./templates')
         app.config.from_object(config_class)

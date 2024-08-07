@@ -1,3 +1,11 @@
+"""
+Configuration for application logging.
+
+This module sets up the logging configuration to output logs
+to both console and file with specific formatting and rotation
+policies.
+"""
+
 import logging
 from flask import has_request_context, request
 from logging.handlers import RotatingFileHandler
@@ -8,6 +16,11 @@ logger.setLevel(logging.DEBUG)
 
 
 class NewFormatter(logging.Formatter):
+    """
+    Custom logging formatter for the Trivia Vs AI application.
+
+    This formatter adds the URL of the request to the log record if the request context is available.
+    """
     def format(self, record):
         record.name = 'Trivia Vs AI'
         if has_request_context():
@@ -28,25 +41,3 @@ logger.addHandler(consoleHandler)
 fileHandler = RotatingFileHandler("logs.log", backupCount=100, maxBytes=100000)
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
-
-# import logging
-# from logging.handlers import RotatingFileHandler
-# import os
-#
-#
-# def setup_logging():
-#     """Setup logging for the application."""
-#     # Ensure the logs directory exists
-#     if not os.path.exists('logs'):
-#         os.mkdir('logs')
-#
-#     # Configure a rotating file handler
-#     file_handler = RotatingFileHandler('logs/app.log', maxBytes=100000, backupCount=10)
-#     file_handler.setFormatter(logging.Formatter(
-#         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-#     ))
-#     file_handler.setLevel(logging.INFO)
-#
-#     # Apply the handler to the root logger
-#     logging.getLogger().setLevel(logging.INFO)
-#     logging.getLogger().addHandler(file_handler)

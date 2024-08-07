@@ -1,3 +1,4 @@
+# JSON schema to validate the creation of a new role
 create_role_schema = {
     "type": "object",
     "properties": {

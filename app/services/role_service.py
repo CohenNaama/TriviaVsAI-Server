@@ -1,10 +1,26 @@
+"""
+Service layer for managing role-related operations.
+
+This module provides functions to handle the creation, retrieval, and deletion
+of user roles. It interacts with the Role Data Access Layer (DAL) to perform
+database operations and manage role-related business logic.
+"""
+
 from app.dal.role_dal import RoleDAL
 from app.models.role import Role
 from app.logging_config import logger
 
 
 def create_role(data):
-    """Create a new role."""
+    """
+    Create a new role.
+
+    Args:
+        data (dict): A dictionary containing role information.
+
+    Returns:
+        tuple: A response message and an HTTP status code.
+    """
     role_name = data.get('role_name')
     if not role_name:
         msg = "Missing required field: role_name"
@@ -33,7 +49,12 @@ def create_role(data):
 
 
 def get_all_roles():
-    """Retrieve all roles."""
+    """
+    Retrieve all roles.
+
+    Returns:
+        tuple: A list of roles and an HTTP status code.
+    """
     try:
         roles = RoleDAL.get_all_roles()
         if not roles:
@@ -51,7 +72,15 @@ def get_all_roles():
 
 
 def get_role_by_id(role_id):
-    """Retrieve a role by ID."""
+    """
+    Retrieve a role by ID.
+
+    Args:
+        role_id (int): The ID of the role.
+
+    Returns:
+        tuple: The role data as a dictionary and an HTTP status code.
+    """
     try:
         role = RoleDAL.get_role_by_id(role_id)
         if role:

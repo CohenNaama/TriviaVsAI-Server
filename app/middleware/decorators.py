@@ -1,3 +1,10 @@
+"""
+Custom decorators for request handling and validation.
+
+This module defines decorators for ensuring proper authentication,
+authorization, and data validation on API endpoints.
+"""
+
 import jsonschema
 from jsonschema import validate
 from flask_jwt_extended import get_jwt
@@ -8,6 +15,12 @@ from app.logging_config import logger
 
 
 def admin_required():
+    """
+    Decorator to ensure that the user has admin privileges.
+
+    Returns:
+        Response: JSON response with an error message if the user is not an admin.
+    """
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
@@ -34,6 +47,12 @@ def admin_required():
 
 
 def user_required():
+    """
+    Decorator to ensure that the user is authorized.
+
+    Returns:
+        Response: JSON response with an error message if the user is unauthorized.
+    """
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
@@ -62,6 +81,14 @@ def user_required():
 
 
 def permission_required():
+    """
+    Decorator to ensure that the user has the necessary permissions to access or modify resources.
+
+    The user must either be an admin or the user associated with the request.
+
+    Returns:
+        Response: JSON response with an error message if the user lacks permissions.
+    """
     def wrapper(fn):
         @wraps(fn)
         def decorator(*args, **kwargs):
@@ -89,6 +116,15 @@ def permission_required():
 
 
 def json_validator(schema):
+    """
+    Decorator to validate JSON request data against a schema.
+
+    Args:
+        schema (dict): The JSON schema to validate against.
+
+    Returns:
+        Response: JSON response with an error message if validation fails.
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -104,22 +140,22 @@ def json_validator(schema):
     return decorator
 
 
-def multipart_validator(required_fields):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            missing_fields = [field for field in required_fields if field not in request.form
-                              and field not in request.files]
-            if missing_fields:
-                msg = f"Missing fields: {', '.join(missing_fields)}"
-                logger.error(msg)
-                return jsonify({"message": msg}), 400
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-
-
 def form_data_validator(schema):
+    """
+    Decorator to validate form data against a specified JSON schema.
+
+    This decorator processes both form data and file uploads. It converts the form data
+    into a dictionary and includes file information (if available) as part of the validation process.
+    Specifically, it handles fields like 'level' and 'experience_points' by attempting to
+    convert them into integers. It defaults the 'profile_picture' to 'default.jpg' if no file is uploaded.
+
+    Args:
+        schema (dict): The JSON schema to validate the form data against.
+
+    Returns:
+        Response: JSON response with an error message if validation fails, or
+        calls the decorated function if validation is successful.
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

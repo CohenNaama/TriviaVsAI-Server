@@ -1,3 +1,11 @@
+"""
+Service layer for managing user-related operations.
+
+This module contains functions to handle user creation, retrieval,
+updating, and deletion, utilizing the Data Access Layer (DAL) to
+perform database operations.
+"""
+
 from datetime import datetime, timedelta
 from flask_jwt_extended import create_access_token
 from app.models.user import User
@@ -10,6 +18,15 @@ from app.logging_config import logger
 
 
 def login(data):
+    """
+    Authenticate a user and generate an access token.
+
+    Args:
+        data (dict): A dictionary containing username and password.
+
+    Returns:
+        tuple: A response containing an access token and an HTTP status code.
+    """
     try:
         username = data.get("username")
         password = data.get("password")
@@ -60,6 +77,16 @@ def login(data):
 
 
 def create_user(data, files):
+    """
+    Create a new user with the given data.
+
+    Args:
+        data (dict): A dictionary containing user information.
+        files (dict): A dictionary containing file data (profile picture).
+
+    Returns:
+        tuple: A response containing user data and an HTTP status code.
+    """
     try:
         username = data.get('username')
         email = data.get('email')
@@ -131,6 +158,12 @@ def create_user(data, files):
 
 
 def get_users():
+    """
+    Retrieve all users.
+
+    Returns:
+        tuple: A list of user data and an HTTP status code.
+    """
     try:
         users = UserDAL.get_all_users()
         if not users:
@@ -143,6 +176,15 @@ def get_users():
 
 
 def get_user_by_id(user_id):
+    """
+    Retrieve a user by their ID.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        tuple: The user data as a dictionary and an HTTP status code.
+    """
     try:
         user = UserDAL.get_user_by_id(user_id)
         if not user:
@@ -154,6 +196,16 @@ def get_user_by_id(user_id):
 
 
 def update_user(user_id, data):
+    """
+    Update a user's details.
+
+    Args:
+        user_id (int): The ID of the user to update.
+        data (dict): A dictionary containing user information to update.
+
+    Returns:
+        tuple: A response message and an HTTP status code.
+    """
     try:
         email = data.get('email')
         password = data.get('password')
@@ -191,6 +243,15 @@ def update_user(user_id, data):
 
 
 def delete_user(user_id):
+    """
+    Delete a user by their ID.
+
+    Args:
+        user_id (int): The ID of the user to delete.
+
+    Returns:
+        tuple: A response message and an HTTP status code.
+    """
     try:
         user = UserDAL.get_user_by_id(user_id)
         if not user:

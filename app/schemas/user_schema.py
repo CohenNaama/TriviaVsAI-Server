@@ -1,3 +1,4 @@
+# JSON schema to validate login credentials
 login_schema = {
     "type": "object",
     "properties": {
@@ -7,6 +8,7 @@ login_schema = {
     "required": ["username", "password"]
 }
 
+# JSON schema to validate user creation
 user_create_schema = {
     "type": "object",
     "properties": {
@@ -20,6 +22,7 @@ user_create_schema = {
     "required": ["username", "email", "password"]
 }
 
+# JSON schema to validate user updates
 user_update_schema = {
     "type": "object",
     "properties": {
