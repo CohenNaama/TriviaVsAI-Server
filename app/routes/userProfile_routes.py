@@ -17,7 +17,7 @@ from app.services.userProfile_service import (
 from app.middleware.decorators import permission_required, form_data_validator
 from app.models.user import User
 from app.logging_config import logger
-from app.schemas.user_schema import user_update_schema
+from app.schemas.user_schemas import user_update_schema
 
 userProfile_bp = Blueprint('userProfile_bp', __name__)
 

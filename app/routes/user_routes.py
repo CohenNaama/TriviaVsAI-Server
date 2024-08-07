@@ -10,7 +10,7 @@ validation and authentication.
 from app.services.user_service import login as login_service
 from flask_jwt_extended import jwt_required
 from app.middleware.decorators import json_validator, permission_required, form_data_validator
-from app.schemas.user_schema import login_schema, user_create_schema, user_update_schema
+from app.schemas.user_schemas import login_schema, user_create_schema, user_update_schema
 from flask import Blueprint, request, jsonify
 from app.services.user_service import (
     create_user as create_user_service,
