@@ -126,7 +126,7 @@ def update_category(category_id, data):
 
         msg = f"Category with ID {category_id} updated successfully."
         logger.info(msg)
-        return {"message": msg}, 200
+        return {"message": msg}, 204
 
     except Exception as e:
         msg = f"Error updating category with ID {category_id}: {str(e)}"
@@ -156,7 +156,7 @@ def delete_category(category_id):
 
         msg = f"Category with ID {category_id} deleted successfully."
         logger.info(msg)
-        return {"message": msg}, 200
+        return {"message": msg}, 204
 
     except Exception as e:
         msg = f"Error deleting category with ID {category_id}: {str(e)}"

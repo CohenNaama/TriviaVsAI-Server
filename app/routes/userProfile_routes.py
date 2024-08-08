@@ -83,7 +83,9 @@ def view_profile(user_id):
     user = User.query.get(user_id)
     if user and user.profile:
         logger.debug(f"Profile Picture Filename: {user.profile.profile_picture}")
-        return render_template('index.html', profile_picture=user.profile.profile_picture, user_id=user_id)
+        return render_template('index.html',
+                               profile_picture=user.profile.profile_picture,
+                               user_id=user_id)
     else:
         return "User or profile not found", 404
 

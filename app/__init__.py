@@ -61,12 +61,14 @@ def create_app(config_class=Config):
         from app.routes.userProfile_routes import userProfile_bp
         from app.routes.role_routes import role_bp
         from app.routes.category_routes import category_bp
+        from app.routes.question_routes import question_bp
 
         app.register_blueprint(main)
         app.register_blueprint(user_bp)
         app.register_blueprint(userProfile_bp)
         app.register_blueprint(role_bp)
         app.register_blueprint(category_bp)
+        app.register_blueprint(question_bp)
 
         logger.info("Application setup complete.")
         return app
