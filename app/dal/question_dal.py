@@ -28,7 +28,6 @@ class QuestionDAL:
         """
         try:
             question = Question(**question_data)
-            # print("question_data:", question)
             db.session.add(question)
             db.session.flush()
             return question

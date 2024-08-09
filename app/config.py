@@ -24,6 +24,8 @@ class Config:
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     MAX_CONTENT_LENGTH = 2 * 1024 * 1024 # 2MB max file size
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
+    CLAUDE_API_URL = os.getenv('CLAUDE_API_URL')
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)

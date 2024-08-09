@@ -18,7 +18,7 @@ class Score(db.Model, SerializerMixin):
         duration (int): Duration in seconds of the game session.
     """
     __tablename__ = 'scores'
-    serialize_only = ('id', 'user', 'score', 'date', 'category', 'duration')
+    serialize_only = ('id', 'user_id', 'user', 'score', 'date', 'category_id', 'duration')
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
@@ -28,6 +28,23 @@ class Score(db.Model, SerializerMixin):
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
     category = db.relationship('Category', backref='scores')
     duration = db.Column(db.Integer)
+
+    def to_dict(self):
+        """
+              Convert the score instance to a dictionary.
+
+              Returns:
+                  dict: A dictionary representation of the score.
+              """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username,
+            'date': self.date,
+            'score': self.score,
+            'category_id': self.category_id,
+            'duration': self.duration,
+        }
 
     def __repr__(self):
         return f"<Score id={self.id}, user={self.user.username}, score={self.score}, date={self.date}>"

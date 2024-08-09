@@ -8,25 +8,11 @@ request validation.
 """
 
 from flask import Blueprint, request, jsonify
-from app.services.question_service import (create_question_with_ai, get_question_by_id_service,
-                                           get_all_questions_service, update_question_service, delete_question_service)
+from app.services.question_service import (get_question_by_id_service, get_all_questions_service,
+                                           update_question_service, delete_question_service)
 from app.middleware.decorators import admin_required, json_validator
 
 question_bp = Blueprint('question_bp', __name__)
-
-
-@question_bp.route('/questions/ai', methods=['POST'])
-@admin_required()
-def create_question_route():
-    """
-    API endpoint to create a question using AI.
-
-    Returns:
-        Response: JSON response with the created question or error message.
-    """
-    data = request.json
-    response, status = create_question_with_ai(data)
-    return jsonify(response), status
 
 
 @question_bp.route('/questions/<int:question_id>', methods=['GET'])
