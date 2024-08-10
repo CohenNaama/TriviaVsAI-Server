@@ -16,7 +16,7 @@ class Achievement(db.Model, SerializerMixin):
         date_awarded (datetime): Timestamp of when the achievement was awarded.
     """
     __tablename__ = 'achievements'
-    serialize_only = ('id', 'user', 'achievement_name', 'description', 'date_awarded')
+    serialize_only = ('id', 'user', 'user_id', 'achievement_name', 'description', 'date_awarded')
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
@@ -24,6 +24,23 @@ class Achievement(db.Model, SerializerMixin):
     achievement_name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     date_awarded = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        """
+              Convert the achievement instance to a dictionary.
+
+              Returns:
+                  dict: A dictionary representation of the achievement.
+              """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username,
+            'date_awarded': self.date_awarded,
+            'achievement_name': self.achievement_name,
+            'description': self.description,
+
+        }
 
     def __repr__(self):
         return f"<Achievement id={self.id}, user={self.user.username}, name={self.achievement_name}>"

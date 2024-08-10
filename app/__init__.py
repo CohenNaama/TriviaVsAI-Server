@@ -63,6 +63,7 @@ def create_app(config_class=Config):
         from app.routes.category_routes import category_bp
         from app.routes.question_routes import question_bp
         from app.routes.score_routes import score_bp
+        from app.routes.achievement_routes import achievement_bp
         from app.routes.openai_routes import openai_bp
         # from app.routes.claude_routes import claude_bp
 
@@ -73,6 +74,7 @@ def create_app(config_class=Config):
         app.register_blueprint(category_bp)
         app.register_blueprint(question_bp)
         app.register_blueprint(score_bp)
+        app.register_blueprint(achievement_bp)
         app.register_blueprint(openai_bp)
         # app.register_blueprint(claude_bp)
 
