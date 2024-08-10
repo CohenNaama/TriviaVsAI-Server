@@ -40,6 +40,23 @@ class GameSession(db.Model, SerializerMixin):
             return int((self.end_time - self.start_time).total_seconds())
         return None
 
+    def to_dict(self):
+        """
+              Convert the gameSession instance to a dictionary.
+
+              Returns:
+                  dict: A dictionary representation of the gameSession.
+              """
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username,
+            'questions_asked': self.questions_asked,
+            'correct_answers': self.correct_answers,
+            'total_questions': self.total_questions,
+            'duration': self.get_duration(),
+        }
+
     def __repr__(self):
         return (f"<GameSession id={self.id}, user={self.user.username}, "
                 f"correct_answers={self.correct_answers}, total_questions={self.total_questions}, "
