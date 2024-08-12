@@ -1,4 +1,4 @@
-# Trivia VS AI: AI Trivia Master
+# Trivia VS AI
 
 ## Current Development Status
 
@@ -10,7 +10,7 @@ Trivia VS AI is an innovative trivia game powered by artificial intelligence, of
 
 ## Game Overview
 
-**AI Trivia Master** is designed to provide a personalized trivia experience by generating questions in real-time, adapting to player knowledge levels, and offering detailed feedback.
+**Trivia VS AI** is designed to provide a personalized trivia experience by generating questions in real-time, adapting to player knowledge levels, and offering detailed feedback.
 
 ### Key Features
 
@@ -23,7 +23,7 @@ Trivia VS AI is an innovative trivia game powered by artificial intelligence, of
   - Implement sentiment analysis to adjust difficulty and question types based on player engagement.
 
 - **Adaptive Difficulty:**
-  - Gemini technology adjusts question difficulty dynamically based on player performance and knowledge level.
+  - Gemini's technology adjusts question difficulty dynamically based on player performance and knowledge level.
   - Offer personalized question sets to maintain challenge and engagement.
 
 - **Leaderboards and Social Features:**
@@ -58,8 +58,8 @@ Trivia VS AI is an innovative trivia game powered by artificial intelligence, of
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/trivia-vs-ai.git
-   cd trivia-vs-ai
+   git clone https://github.com/CohenNaama/TriviaVsAI-Server.git
+   cd TriviaVsAI-Server
 
 2. **Set up a virtual environment:**
 ```bash

@@ -4,6 +4,9 @@ from datetime import datetime
 from app.logging_config import logger
 from app.models.question import Question, DifficultyLevel
 from app.dal.question_dal import QuestionDAL
+from app.services.streaks_tracker import get_streaks
+from app.services.question_service import adjust_difficulty
+from app.services.category_service import select_category
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
@@ -54,7 +57,7 @@ def parse_ai_response(response_text):
         return {
             "question_text": question_text,
             "answer": answer,
-            "incorrect_answers": incorrect_answers[:3],  # Ensure only three incorrect answers
+            "incorrect_answers": incorrect_answers[:3],
         }
     except Exception as e:
         logger.error(f"Error parsing AI response: {e}")
@@ -97,7 +100,6 @@ def generate_trivia_question(prompt):
     """
     try:
         openai.api_key = os.getenv('OPENAI_API_KEY')
-        logger.debug(f"Using OpenAI API Key: {openai.api_key}")
 
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -111,7 +113,6 @@ def generate_trivia_question(prompt):
         )
 
         response_text = response['choices'][0]['message']['content'].strip()
-        logger.debug(f"OpenAI response: {response_text}")
 
         question_data = parse_ai_response(response_text)
         return question_data
@@ -162,3 +163,44 @@ def create_question_with_ai(data):
         msg = f"Error creating AI-generated question: {str(e)}"
         logger.error(msg)
         return {'status': 'failed', 'message': msg}, 500
+
+
+def get_next_question_service(user_id):
+    """
+    Service function to get the next AI-generated question for the user, adjusting difficulty as needed.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        dict: A dictionary containing the next question and its difficulty level.
+    """
+    try:
+        streak = get_streaks(user_id)
+        current_difficulty = DifficultyLevel.MEDIUM.value  # Default starting difficulty
+
+        adjusted_difficulty = adjust_difficulty(user_id, streak, current_difficulty)
+
+        selected_category = select_category()
+
+        prompt = (
+            f"Generate a unique and interesting trivia question about {selected_category.name} "
+            f"at {adjusted_difficulty} level. Include a question, the correct answer, and "
+            "three incorrect answers."
+        )
+
+        question_data = generate_trivia_question(prompt)
+
+        question_data.update({
+            "category_id": selected_category.id,
+            "difficulty": DifficultyLevel[adjusted_difficulty.upper()],
+            "created_at": datetime.utcnow()
+        })
+
+        question = QuestionDAL.create_question(question_data)
+        QuestionDAL.commit_changes()
+
+        return {'question': question.to_dict(), 'difficulty': adjusted_difficulty}
+
+    except Exception as e:
+        raise Exception(f"Failed to generate the next question: {str(e)}")

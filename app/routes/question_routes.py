@@ -9,8 +9,9 @@ request validation.
 
 from flask import Blueprint, request, jsonify
 from app.services.question_service import (get_question_by_id_service, get_all_questions_service,
-                                           update_question_service, delete_question_service)
+                                           update_question_service, delete_question_service, submit_answer_service)
 from app.middleware.decorators import admin_required, json_validator
+from app.services.openai_service import get_next_question_service
 
 question_bp = Blueprint('question_bp', __name__)
 
@@ -41,3 +42,35 @@ def update_question_route(question_id):
 def delete_question_route(question_id):
     response, status = delete_question_service(question_id)
     return jsonify(response), status
+
+
+@question_bp.route('/questions/<int:question_id>/submit', methods=['POST'])
+def submit_answer_route(question_id):
+    """
+    API endpoint to submit an answer and update the success rate and streaks.
+
+    Returns:
+        Response: JSON response indicating success or failure.
+    """
+    data = request.json
+    user_id = data.get('user_id')
+    correct = data.get('correct', False)
+    session_id = data.get('session_id')
+
+    response, status = submit_answer_service(session_id, question_id, user_id, correct)
+    return jsonify(response), status
+
+
+@question_bp.route('/questions/next/<int:user_id>', methods=['GET'])
+def get_next_question(user_id):
+    """
+    API endpoint to get the next AI-generated question for the user, adjusting difficulty as needed.
+
+    Returns:
+        Response: JSON response with the next question or error message.
+    """
+    try:
+        result = get_next_question_service(user_id)
+        return jsonify({'status': 'success', 'question': result['question'], 'difficulty': result['difficulty']}), 200
+    except Exception as e:
+        return jsonify({'status': 'failed', 'message': str(e)}), 500

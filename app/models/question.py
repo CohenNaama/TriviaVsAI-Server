@@ -39,7 +39,7 @@ class Question(db.Model, SerializerMixin):
                       'incorrect_answers', 'created_at', 'times_asked', 'success_rate')
 
     id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)  # Use 'categories.id'
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     category = db.relationship('Category', backref='questions')
     difficulty = db.Column(db.Enum(DifficultyLevel), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
@@ -51,16 +51,3 @@ class Question(db.Model, SerializerMixin):
 
     def __repr__(self):
         return f"<Question id={self.id}, category={self.category.name}, difficulty={self.difficulty.name}>"
-
-    # def update_success_rate(self, correct_count, total_count):
-    #     """
-    #     Update the success rate of the question.
-    #
-    #     Args:
-    #         correct_count (int): Number of correct answers.
-    #         total_count (int): Total number of times the question was asked.
-    #     """
-    #     if total_count > 0:
-    #         self.success_rate = correct_count / total_count
-    #     else:
-    #         self.success_rate = 0.0

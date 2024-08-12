@@ -9,6 +9,7 @@ database operations and manage category-related business logic.
 from app.dal.category_dal import CategoryDAL
 from app.models.category import Category
 from app.logging_config import logger
+import random
 
 
 def create_category(data):
@@ -162,3 +163,36 @@ def delete_category(category_id):
         msg = f"Error deleting category with ID {category_id}: {str(e)}"
         logger.error(msg)
         return {'status': 'failed', 'message': msg}, 500
+
+
+def get_least_used_categories():
+    """
+    Retrieve the categories that have been used the least.
+
+    Returns:
+        list: A list of Category objects.
+    """
+    categories = CategoryDAL.get_all_categories()
+    if not categories:
+        return []
+
+    sorted_categories = sorted(categories, key=lambda c: c.usage_count)
+    least_used = [c for c in sorted_categories if c.usage_count == sorted_categories[0].usage_count]
+    return least_used
+
+
+def select_category():
+    """
+    Select a category for the next question.
+
+    Returns:
+        Category: The selected category object.
+    """
+    least_used_categories = get_least_used_categories()
+
+    selected_category = random.choice(least_used_categories)
+
+    selected_category.usage_count += 1
+    CategoryDAL.commit_changes()
+
+    return selected_category

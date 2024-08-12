@@ -90,6 +90,25 @@ class QuestionDAL:
             raise e
 
     @staticmethod
+    def update_success_rate(question, correct):
+        """
+        Update the success rate for a question.
+
+        Args:
+            question (Question): The question object to update.
+            correct (bool): Whether the answer was correct.
+
+        Returns:
+            None
+        """
+        correct_answers = question.success_rate * question.times_asked
+        if correct:
+            correct_answers += 1
+
+        question.success_rate = correct_answers / question.times_asked
+        db.session.flush()
+
+    @staticmethod
     def delete_question(question):
         """
         Delete a question from the database.
