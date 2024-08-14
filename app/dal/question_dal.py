@@ -101,12 +101,16 @@ class QuestionDAL:
         Returns:
             None
         """
-        correct_answers = question.success_rate * question.times_asked
-        if correct:
-            correct_answers += 1
+        try:
+            correct_answers = question.success_rate * question.times_asked
+            if correct:
+                correct_answers += 1
 
-        question.success_rate = correct_answers / question.times_asked
-        db.session.flush()
+            question.success_rate = correct_answers / question.times_asked
+            db.session.flush()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
 
     @staticmethod
     def delete_question(question):

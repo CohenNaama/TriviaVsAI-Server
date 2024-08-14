@@ -8,6 +8,7 @@ from the business logic in the service layer.
 
 from app.models.gameSession import GameSession, db
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
 
 
 class GameSessionDAL:
@@ -90,11 +91,11 @@ class GameSessionDAL:
             if not session:
                 raise ValueError(f"GameSession with id {session_id} for user_id {user_id} not found.")
 
-            session.questions_asked = data.get('questions_asked', session.questions_asked)
-            session.correct_answers = data.get('correct_answers', session.correct_answers)
-            session.total_questions = data.get('total_questions', session.total_questions)
-            session.start_time = data.get('start_time', session.start_time)
-            session.end_time = data.get('end_time', session.end_time)
+            # Update the fields if they are present in the data dictionary
+            for key, value in data.items():
+                if hasattr(session, key):
+                    setattr(session, key, value)
+
             db.session.commit()
             return session
         except SQLAlchemyError as e:
@@ -121,6 +122,43 @@ class GameSessionDAL:
             db.session.delete(session)
             db.session.commit()
             return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def get_most_recent_session(user_id):
+        """
+        Retrieve the most recent game session for a user.
+
+        Args:
+            user_id (int): The ID of the user.
+
+        Returns:
+            GameSession: The most recent GameSession object.
+        """
+        return GameSession.query.filter_by(user_id=user_id).order_by(GameSession.start_time.desc()).first()
+
+    @staticmethod
+    def finalize_session(session):
+        """
+        Finalize the game session by marking it as inactive and saving the end time.
+        Args:
+            session (GameSession): The GameSession object to finalize.
+        """
+        try:
+            session.is_active = False
+            session.is_finalized = True
+            session.end_time = datetime.utcnow()
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def commit_changes():
+        try:
+            db.session.commit()
         except SQLAlchemyError as e:
             db.session.rollback()
             raise e

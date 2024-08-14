@@ -57,7 +57,7 @@ def get_all_scores_of_user_service(user_id):
         dict: Response message and status code.
     """
     try:
-        scores = ScoreDAL.get_all_scores_of_user(user_id)
+        scores = ScoreDAL.get_user_score_history(user_id)
         return {'status': 'success',
                 'data': [score.to_dict() for score in scores]}, 200
     except Exception as e:

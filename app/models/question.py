@@ -41,7 +41,7 @@ class Question(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
     category = db.relationship('Category', backref='questions')
-    difficulty = db.Column(db.Enum(DifficultyLevel), nullable=False)
+    difficulty = db.Column(db.Enum(DifficultyLevel), nullable=False, default="easy")
     question_text = db.Column(db.Text, nullable=False)
     answer = db.Column(db.String(255), nullable=False)
     incorrect_answers = db.Column(db.JSON, nullable=False)

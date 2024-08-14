@@ -78,7 +78,7 @@ pip install -r requirements.txt
    Create a .env file in the root directory and add the following:
 ```
 SECRET_KEY=your_secret_key
-DATABASE_URL=postgresql://username:password@localhost/dbname
+DATABASE_URL=postgresql://username:password@localhost/triviadb
 ```
 
 5. **Initialize the database:**

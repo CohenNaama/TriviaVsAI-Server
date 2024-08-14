@@ -6,13 +6,18 @@ updating, and deletion, utilizing the Data Access Layer (DAL) to
 perform database operations.
 """
 
+from datetime import datetime
 from app.dal.question_dal import QuestionDAL
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
 from .streaks_tracker import streaks
-from app.models.gameSession import GameSession
+from app.models.gameSession import GameSession, db
 from app.models.question import DifficultyLevel
 from app.helpers.feedback_helper import increase_difficulty, decrease_difficulty
+from app.services.score_service import create_score_service
+from app.services.game_session_service import update_skill_mapping
+from app.dal.game_session_dal import GameSessionDAL
+from sqlalchemy.orm.attributes import flag_modified
 
 
 def get_question_by_id_service(question_id):
@@ -177,7 +182,7 @@ def adjust_difficulty(user_id, streak, current_difficulty):
 
 def submit_answer_service(session_id, question_id, user_id, correct):
     """
-    Service function to handle submitting an answer and updating the success rate and streaks.
+    Service function to handle submitting an answer, updating the success rate, and creating a score.
 
     Args:
         session_id (int): The ID of the game session.
@@ -189,32 +194,57 @@ def submit_answer_service(session_id, question_id, user_id, correct):
         tuple: Response message and status code.
     """
     try:
-        session = GameSession.query.get(session_id)
-        if session is None:
-            msg = f"Session ID: {session_id} not found."
-            logger.info(msg)
-            return {'status': 'fail', 'message': msg}, 404
+        session = GameSessionDAL.get_game_session_by_id(user_id, session_id)
+        if not session:
+            return {'status': 'fail', 'message': f"Session ID: {session_id} not found."}, 404
 
         question = QuestionDAL.get_question_by_id(question_id)
-        if question is None:
-            msg = f"Question ID: {question_id} not found."
-            logger.info(msg)
-            return {'status': 'fail', 'message': msg}, 404
+        if not question:
+            return {'status': 'fail', 'message': f"Question ID: {question_id} not found."}, 404
+
+        if question_id not in session.questions_asked:
+            session.questions_asked.append(question_id)
+
+        if correct:
+            session.correct_answers += 1
+        session.total_questions += 1
+
+        category_id_str = str(question.category_id)
+        if category_id_str not in session.skill_levels:
+            session.skill_levels[category_id_str] = {'correct': 0, 'total': 0}
+
+        session.skill_levels[category_id_str]['total'] += 1
+        if correct:
+            session.skill_levels[category_id_str]['correct'] += 1
+        update_skill_mapping(session, question.category_id, correct)
+
+        flag_modified(session, "questions_asked")
+        flag_modified(session, "skill_levels")
+
+        GameSessionDAL.commit_changes()
+
+        session = GameSessionDAL.get_game_session_by_id(user_id, session_id)
+
+        question.times_asked += 1
+        QuestionDAL.update_success_rate(question, correct)
 
         streak = update_streaks(user_id, correct)
-        print(f"User {user_id} streaks: {streak}")
+        points = 10 if correct else 0
+        if correct and streak['correct_streak'] >= 3:
+            points += 5
 
-        correct_answers = question.success_rate * question.times_asked
-        if correct:
-            correct_answers += 1
+        score_data = {
+            'user_id': user_id,
+            'score': points,
+            'date': datetime.utcnow(),
+            'category_id': question.category_id,
+            'duration': session.get_duration()
+        }
+        create_score_service(score_data)
 
-        question.success_rate = correct_answers / question.times_asked
-        QuestionDAL.commit_changes()
+        return {'status': 'success',
+                'message': f"Question ID: {question_id} answered. Score recorded for session ID: {session_id}."}, 201
 
-        msg = f"Question ID: {question_id} success rate and streaks updated for session ID: {session_id}."
-        logger.info(msg)
-        return {'status': 'success', 'message': msg}, 201
     except SQLAlchemyError as e:
-        msg = f"Error updating success rate or streaks for question ID {question_id}: {str(e)}"
-        logger.error(msg)
-        return {'status': 'failed', 'message': msg}, 500
+        db.session.rollback()
+        return {'status': 'failed', 'message': f"Error processing answer or recording score: {str(e)}"}, 500

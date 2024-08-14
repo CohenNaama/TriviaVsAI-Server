@@ -50,7 +50,7 @@ class ScoreDAL:
         return Score.query.filter_by(id=score_id, user_id=user_id).first()
 
     @staticmethod
-    def get_all_scores_of_user(user_id):
+    def get_user_score_history(user_id):
         """
         Retrieve all scores of user from the database.
 

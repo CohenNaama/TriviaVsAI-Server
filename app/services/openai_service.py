@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from app.logging_config import logger
 from app.models.question import Question, DifficultyLevel
+from app.models.gameSession import GameSession
 from app.dal.question_dal import QuestionDAL
 from app.services.streaks_tracker import get_streaks
 from app.services.question_service import adjust_difficulty
@@ -22,8 +23,6 @@ def parse_ai_response(response_text):
         dict: Parsed question data.
     """
     try:
-
-        # Split the response by lines
         lines = [line.strip() for line in response_text.split('\n') if line.strip()]
         logger.debug(f"Parsed lines: {lines}")
 
@@ -42,7 +41,6 @@ def parse_ai_response(response_text):
                 incorrect_answers.append(line.replace("Incorrect Answer", "")
                                          .replace(f"{len(incorrect_answers) + 1}.", "").strip())
 
-        # Ensure the correct answer is extracted properly
         if answer == "" and incorrect_answers:
             answer = incorrect_answers.pop(0).replace("Correct Answer:", "").strip()
 
@@ -50,7 +48,6 @@ def parse_ai_response(response_text):
         logger.debug(f"Parsed answer: {answer}")
         logger.debug(f"Parsed incorrect answers: {incorrect_answers}")
 
-        # Ensure at least three incorrect answers
         while len(incorrect_answers) < 3:
             incorrect_answers.append("Unknown Incorrect Answer")
 
@@ -122,62 +119,25 @@ def generate_trivia_question(prompt):
         raise
 
 
-def create_question_with_ai(data):
+def create_question_for_session_service(user_id, session_id):
     """
-    Create a question using AI-generated content.
-
-    Args:
-        data (dict): Initial question data.
-
-    Returns:
-        tuple: Response message and status code.
-    """
-    try:
-        prompt = (
-            f"Generate a unique and interesting trivia question about {data['category']} "
-            f"at {data['difficulty']} level. Include a question, the correct answer, and "
-            "three incorrect answers. Ensure the topic is distinct from previous requests."
-        )
-
-        question_data = generate_trivia_question(prompt)
-
-        if not is_question_unique(question_data['question_text']):
-            msg = "Duplicate question detected."
-            logger.warning(msg)
-            return {'status': 'failed', 'message': msg}, 409
-
-        question_data.update({
-            "category_id": data["category_id"],
-            "difficulty": DifficultyLevel[data["difficulty"].upper()],
-            "created_at": datetime.utcnow()
-        })
-
-        question = QuestionDAL.create_question(question_data)
-        QuestionDAL.commit_changes()
-
-        logger.info(f"AI-generated question created successfully: {question}")
-        return {'status': 'success',
-                'message': 'AI-generated question created successfully.',
-                'data': question.to_dict()}, 201
-    except Exception as e:
-        msg = f"Error creating AI-generated question: {str(e)}"
-        logger.error(msg)
-        return {'status': 'failed', 'message': msg}, 500
-
-
-def get_next_question_service(user_id):
-    """
-    Service function to get the next AI-generated question for the user, adjusting difficulty as needed.
+    Service function to create the next AI-generated question for the user, adjusting difficulty as needed,
+    and ensuring no repeated questions within the same session.
 
     Args:
         user_id (int): The ID of the user.
+        session_id (int): The ID of the game session.
 
     Returns:
         dict: A dictionary containing the next question and its difficulty level.
     """
     try:
+        session = GameSession.query.get(session_id)
+        if session is None:
+            raise Exception(f"Session ID {session_id} not found.")
+
         streak = get_streaks(user_id)
-        current_difficulty = DifficultyLevel.MEDIUM.value  # Default starting difficulty
+        current_difficulty = DifficultyLevel.MEDIUM.value
 
         adjusted_difficulty = adjust_difficulty(user_id, streak, current_difficulty)
 
@@ -191,6 +151,9 @@ def get_next_question_service(user_id):
 
         question_data = generate_trivia_question(prompt)
 
+        if not is_question_unique(question_data['question_text']):
+            raise Exception("Duplicate question detected.")
+
         question_data.update({
             "category_id": selected_category.id,
             "difficulty": DifficultyLevel[adjusted_difficulty.upper()],
@@ -198,6 +161,10 @@ def get_next_question_service(user_id):
         })
 
         question = QuestionDAL.create_question(question_data)
+
+        session.questions_asked.append(question.id)
+        session.total_questions += 1
+
         QuestionDAL.commit_changes()
 
         return {'question': question.to_dict(), 'difficulty': adjusted_difficulty}

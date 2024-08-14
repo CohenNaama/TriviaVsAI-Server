@@ -66,7 +66,6 @@ def create_app(config_class=Config):
         from app.routes.achievement_routes import achievement_bp
         from app.routes.game_session_routes import game_session_bp
         from app.routes.streaks_routes import streak_bp
-        from app.routes.openai_routes import openai_bp
         # from app.routes.claude_routes import claude_bp
 
         app.register_blueprint(main)
@@ -79,7 +78,6 @@ def create_app(config_class=Config):
         app.register_blueprint(achievement_bp)
         app.register_blueprint(game_session_bp)
         app.register_blueprint(streak_bp)
-        app.register_blueprint(openai_bp)
         # app.register_blueprint(claude_bp)
 
         logger.info("Application setup complete.")
