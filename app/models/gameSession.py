@@ -12,6 +12,7 @@ class GameSession(db.Model, SerializerMixin):
         user_id (int): Foreign key referencing the User model.
         user (relationship): Relationship to the User model.
         questions_asked (list): List of question IDs asked during the session.
+        response_times (dict): A mapping of question IDs to response times, measured in seconds.
         correct_answers (int): Number of correct answers given by the user.
         total_questions (int): Total number of questions asked in the session.
         start_time (datetime): Timestamp when the session started.
@@ -29,6 +30,7 @@ class GameSession(db.Model, SerializerMixin):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     user = db.relationship('User', backref=db.backref('game_sessions', cascade='all, delete-orphan'))
     questions_asked = db.Column(db.ARRAY(db.Integer), nullable=False, default=[])
+    response_times = db.Column(db.JSON, default={})
     correct_answers = db.Column(db.Integer, nullable=False)
     total_questions = db.Column(db.Integer, nullable=False)
     start_time = db.Column(db.DateTime, default=datetime.utcnow)
@@ -65,8 +67,8 @@ class GameSession(db.Model, SerializerMixin):
             'duration': self.get_duration(),
             'is_active': self.is_active,
             'is_finalized': self.is_finalized,
-            'skill_levels': self.skill_levels
-
+            'skill_levels': self.skill_levels,
+            'response_times': self.response_times
         }
 
     def __repr__(self):

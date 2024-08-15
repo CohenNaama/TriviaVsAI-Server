@@ -7,8 +7,10 @@ database operations and manage game session-related business logic.
 """
 
 from app.dal.game_session_dal import GameSessionDAL
+from app.dal.achievement_dal import AchievementDAL
 from datetime import datetime
 from app.models.gameSession import db
+from app.services.streaks_tracker import streaks
 
 
 def create_game_session_service(session_data):
@@ -124,14 +126,15 @@ def delete_game_session_service(user_id, session_id):
         return {'status': 'failed', 'message': f"Error deleting game session: {str(e)}"}, 500
 
 
-def update_skill_mapping(session, category_id, correct):
+def update_skill_mapping(session, category_id, correct, user_id):
     """
-    Update the user's skill level mapping based on performance in a category.
+    Update the user's skill level mapping based on performance in a category and update global streaks.
 
     Args:
         session (GameSession): The current game session object.
         category_id (int): The category ID.
         correct (bool): Whether the answer was correct.
+        user_id (int): The ID of the user.
 
     Returns:
         None
@@ -146,7 +149,6 @@ def update_skill_mapping(session, category_id, correct):
         'accuracy': 0.0,
         'last_attempt_correct': None
     })
-
     skill_levels[str(category_id)].setdefault('current_streak', {'correct': 0, 'incorrect': 0})
     skill_levels[str(category_id)].setdefault('max_streak', {'correct': 0, 'incorrect': 0})
 
@@ -160,7 +162,8 @@ def update_skill_mapping(session, category_id, correct):
         if (skill_levels[str(category_id)]['current_streak']['correct'] >
                 skill_levels[str(category_id)]['max_streak']['correct']):
             skill_levels[str(category_id)]['max_streak']['correct'] = (
-                skill_levels)[str(category_id)]['current_streak']['correct']
+                skill_levels[str(category_id)]['current_streak']['correct'])
+
     else:
         skill_levels[str(category_id)]['current_streak']['incorrect'] += 1
         skill_levels[str(category_id)]['current_streak']['correct'] = 0
@@ -168,10 +171,10 @@ def update_skill_mapping(session, category_id, correct):
         if (skill_levels[str(category_id)]['current_streak']['incorrect'] >
                 skill_levels[str(category_id)]['max_streak']['incorrect']):
             skill_levels[str(category_id)]['max_streak']['incorrect'] = (
-                skill_levels)[str(category_id)]['current_streak']['incorrect']
+                skill_levels[str(category_id)]['current_streak']['incorrect'])
 
     skill_levels[str(category_id)]['accuracy'] = (
-            skill_levels[str(category_id)]['correct'] / skill_levels[str(category_id)]['total'])
+        skill_levels[str(category_id)]['correct'] / skill_levels[str(category_id)]['total'])
 
     skill_levels[str(category_id)]['last_attempt_correct'] = correct
 
@@ -200,7 +203,14 @@ def finalize_session_service(session_id, user_id):
 
     try:
         GameSessionDAL.finalize_session(session)
-        return {"status": "success", "message": f"Session ID {session_id} finalized successfully."}, 200
+
+        achievements = check_for_milestones(user_id)
+        if achievements:
+            print(f"New achievements awarded: {achievements}")
+
+        return {"status": "success", "message": f"Session ID {session_id} finalized successfully.",
+                "new_achievements": achievements}, 200
+
     except Exception as e:
         return {"status": "failed", "message": f"Error finalizing session ID {session_id}: {str(e)}"}, 500
 
@@ -211,6 +221,7 @@ def terminate_session_service(session_id, user_id, reason="completed", user_init
 
     Args:
         session_id (int): The ID of the session to terminate.
+        user_id (int): The ID of the user.
         reason (str): The reason for termination, e.g., "completed", "incorrect_answers", "manual_exit".
         user_initiated (bool): Whether the termination was initiated by the user.
 
@@ -247,3 +258,50 @@ def terminate_session_service(session_id, user_id, reason="completed", user_init
 def check_incorrect_answers(user_id, session_id, incorrect_count):
     if incorrect_count >= 3:
         terminate_session_service(user_id, session_id, reason="incorrect_answers")
+
+
+def check_for_milestones(user_id):
+    """
+    Check if a user has reached specific milestones and award achievements.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        list: A list of new achievements awarded.
+    """
+    current_streak = streaks.get(user_id, {'correct_streak': 0, 'incorrect_streak': 0})
+    achievements = []
+
+    if 10 <= current_streak['correct_streak'] < 20:
+        achievements.append({
+            'achievement_name': '10 Correct Answers in a Row',
+            'description': 'You have answered 10 questions correctly in a row.'
+        })
+    elif 20 <= current_streak['correct_streak'] < 30:
+        achievements.append({
+            'achievement_name': '20 Correct Answers in a Row',
+            'description': 'You have answered 20 questions correctly in a row.'
+        })
+    elif current_streak['correct_streak'] >= 30:
+        achievements.append({
+            'achievement_name': '30 Correct Answers in a Row',
+            'description': 'You have answered 30 questions correctly in a row.'
+        })
+
+    session = GameSessionDAL.get_most_recent_session(user_id)
+    if session and session.total_questions >= 100:
+        achievements.append({
+            'achievement_name': '100 Questions Answered',
+            'description': 'You have answered 100 questions in total.'
+        })
+
+    for achievement in achievements:
+        AchievementDAL.create_achievement({
+            'user_id': user_id,
+            'achievement_name': achievement['achievement_name'],
+            'description': achievement['description'],
+            'date_awarded': datetime.utcnow()
+        })
+
+    return achievements

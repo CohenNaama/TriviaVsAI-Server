@@ -10,12 +10,12 @@ from datetime import datetime
 from app.dal.question_dal import QuestionDAL
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
-from .streaks_tracker import streaks
+from app.services.streaks_tracker import streaks
 from app.models.gameSession import GameSession, db
 from app.models.question import DifficultyLevel
 from app.helpers.feedback_helper import increase_difficulty, decrease_difficulty
 from app.services.score_service import create_score_service
-from app.services.game_session_service import update_skill_mapping
+from app.services.game_session_service import update_skill_mapping, check_for_milestones
 from app.dal.game_session_dal import GameSessionDAL
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -197,29 +197,44 @@ def submit_answer_service(session_id, question_id, user_id, correct):
         session = GameSessionDAL.get_game_session_by_id(user_id, session_id)
         if not session:
             return {'status': 'fail', 'message': f"Session ID: {session_id} not found."}, 404
+        # Ensure questions_asked is initialized
+        if session.questions_asked is None:
+            session.questions_asked = []
 
+        # Ensure response_times is initialized
+        if session.response_times is None:
+            session.response_times = {}
+
+        if session.skill_levels is None:
+            session.skill_levels = {}
+
+        session = db.session.merge(session)
+        start_time = datetime.utcnow()
         question = QuestionDAL.get_question_by_id(question_id)
         if not question:
             return {'status': 'fail', 'message': f"Question ID: {question_id} not found."}, 404
 
         if question_id not in session.questions_asked:
             session.questions_asked.append(question_id)
+            flag_modified(session, "questions_asked")
+            db.session.commit()
 
         if correct:
             session.correct_answers += 1
         session.total_questions += 1
 
-        category_id_str = str(question.category_id)
-        if category_id_str not in session.skill_levels:
-            session.skill_levels[category_id_str] = {'correct': 0, 'total': 0}
+        update_skill_mapping(session, question.category_id, correct, user_id)
 
-        session.skill_levels[category_id_str]['total'] += 1
-        if correct:
-            session.skill_levels[category_id_str]['correct'] += 1
-        update_skill_mapping(session, question.category_id, correct)
+        if 'skill_levels' in session.__dict__:
+            flag_modified(session, "skill_levels")
+        else:
+            print("[ERROR] 'skill_levels' not found in session state!")
+        db.session.commit()
 
-        flag_modified(session, "questions_asked")
-        flag_modified(session, "skill_levels")
+        response_time = (datetime.utcnow() - start_time).total_seconds()
+        session.response_times[str(question_id)] = response_time
+
+        flag_modified(session, "response_times")
 
         GameSessionDAL.commit_changes()
 
@@ -241,6 +256,10 @@ def submit_answer_service(session_id, question_id, user_id, correct):
             'duration': session.get_duration()
         }
         create_score_service(score_data)
+
+        achievements = check_for_milestones(user_id)
+        if achievements:
+            print(f"New achievements awarded: {achievements}")
 
         return {'status': 'success',
                 'message': f"Question ID: {question_id} answered. Score recorded for session ID: {session_id}."}, 201

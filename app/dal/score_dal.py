@@ -8,6 +8,8 @@ from the business logic in the service layer.
 
 from app.models.score import Score, db
 from sqlalchemy.exc import SQLAlchemyError
+from app.models.user import User
+from sqlalchemy import func, desc
 
 
 class ScoreDAL:
@@ -119,6 +121,19 @@ class ScoreDAL:
         except SQLAlchemyError as e:
             db.session.rollback()
             raise e
+
+    @staticmethod
+    def fetch_leaderboard():
+        """
+        Fetch the leaderboard based on total score.
+
+        Returns:
+            list: A list of SQLAlchemy Row objects representing user rankings.
+        """
+        return db.session.query(
+            User.username,
+            func.sum(Score.score).label('total_score')
+        ).join(Score).group_by(User.username).order_by(desc('total_score')).all()
 
     @staticmethod
     def commit_changes():
