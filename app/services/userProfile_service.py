@@ -11,6 +11,7 @@ from app.dal.userProfile_dal import UserProfileDAL
 from app.middleware.helpers import save_profile_picture
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
+from app.models.userProfile import db
 
 
 def get_all_profiles():
@@ -102,3 +103,78 @@ def update_user_profile(user_id, form_data, files):
         msg = f"An unexpected error occurred during user update: {str(e)}"
         logger.error(msg)
         return {'status': 'failed', 'message': msg}, 500
+
+
+# Experience point thresholds for different levels
+LEVEL_THRESHOLDS = {
+    1: 0,
+    2: 50,
+    3: 200,
+    4: 500,
+    5: 1000,
+}
+
+
+def map_level_to_category(level):
+    """
+    Maps a numerical level to a category string.
+
+    Args:
+        level (int): The player's level.
+
+    Returns:
+        str: The category corresponding to the player's level.
+    """
+    if level <= 3:
+        return "new"
+    elif 4 <= level <= 7:
+        return "intermediate"
+    else:
+        return "advanced"
+
+
+def calculate_player_level(experience_points):
+    """
+    Calculates the player's level based on their experience points.
+
+    Args:
+        experience_points (int): The total experience points of the player.
+
+    Returns:
+        int: The player's calculated level.
+    """
+    level = 1
+    for lvl, xp_threshold in LEVEL_THRESHOLDS.items():
+        if experience_points >= xp_threshold:
+            level = lvl
+        else:
+            break
+    return level
+
+
+def update_player_level(user_profile):
+    """
+    Updates the player's level based on their current experience points.
+
+    Args:
+        user_profile (UserProfile): The user profile object containing the player's current level and experience points.
+    """
+    new_level = calculate_player_level(user_profile.experience_points)
+    if user_profile.level != new_level:
+        user_profile.level = new_level
+
+        UserProfileDAL.commit_changes()
+
+
+def award_experience_points(user_profile, points):
+    """
+    Awards experience points to the player and updates their level accordingly.
+
+    Args:
+        user_profile (UserProfile): The user profile object containing the player's current level and experience points.
+        points (int): The number of experience points to be awarded to the player.
+    """
+    user_profile.experience_points += points
+    update_player_level(user_profile)
+
+    UserProfileDAL.commit_changes()

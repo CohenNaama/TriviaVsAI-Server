@@ -35,7 +35,7 @@ class Question(db.Model, SerializerMixin):
         success_rate (float): Rate of correct answers for this question.
     """
     __tablename__ = 'questions'
-    serialize_only = ('id', 'category', 'difficulty', 'question_text', 'answer',
+    serialize_only = ('id', 'category', 'category_id', 'difficulty', 'question_text', 'answer',
                       'incorrect_answers', 'created_at', 'times_asked', 'success_rate')
 
     id = db.Column(db.Integer, primary_key=True)
@@ -50,4 +50,5 @@ class Question(db.Model, SerializerMixin):
     success_rate = db.Column(db.Float, default=0.0)
 
     def __repr__(self):
-        return f"<Question id={self.id}, category={self.category.name}, difficulty={self.difficulty.name}>"
+        return (f"<Question id={self.id}, category={self.category.name}, difficulty={self.difficulty.name}, "
+                f"category_id={self.category_id}>.")

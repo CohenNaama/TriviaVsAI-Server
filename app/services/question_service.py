@@ -18,6 +18,9 @@ from app.services.score_service import create_score_service
 from app.services.game_session_service import update_skill_mapping, check_for_milestones
 from app.dal.game_session_dal import GameSessionDAL
 from sqlalchemy.orm.attributes import flag_modified
+from app.services.claude_service import get_hybrid_claude_feedback
+from app.services.userProfile_service import award_experience_points, calculate_player_level, map_level_to_category
+from app.models.userProfile import UserProfile
 
 
 def get_question_by_id_service(question_id):
@@ -180,7 +183,7 @@ def adjust_difficulty(user_id, streak, current_difficulty):
         return DifficultyLevel.EASY.value
 
 
-def submit_answer_service(session_id, question_id, user_id, correct):
+def submit_answer_service(session_id, question_id, user_id, correct, player_response):
     """
     Service function to handle submitting an answer, updating the success rate, and creating a score.
 
@@ -189,19 +192,29 @@ def submit_answer_service(session_id, question_id, user_id, correct):
         question_id (int): The ID of the question being answered.
         user_id (int): The ID of the user answering the question.
         correct (bool): Whether the answer was correct.
+        player_response (str): The actual answer provided by the player.
 
     Returns:
         tuple: Response message and status code.
     """
     try:
+        user_profile = UserProfile.query.filter_by(user_id=user_id).first()
+        if not user_profile:
+            return {'status': 'fail', 'message': 'User profile not found.'}, 404
+
+        player_level = calculate_player_level(user_profile.experience_points)
+        player_level_category = map_level_to_category(player_level)
+
+        if user_profile.level != player_level:
+            user_profile.level = player_level
+            db.session.commit()
+
         session = GameSessionDAL.get_game_session_by_id(user_id, session_id)
         if not session:
             return {'status': 'fail', 'message': f"Session ID: {session_id} not found."}, 404
-        # Ensure questions_asked is initialized
         if session.questions_asked is None:
             session.questions_asked = []
 
-        # Ensure response_times is initialized
         if session.response_times is None:
             session.response_times = {}
 
@@ -260,6 +273,32 @@ def submit_answer_service(session_id, question_id, user_id, correct):
         achievements = check_for_milestones(user_id)
         if achievements:
             print(f"New achievements awarded: {achievements}")
+
+        if correct:
+            award_experience_points(user_profile, points=points)
+
+        skill_levels = session.skill_levels
+        past_performance = {
+            question.category_id: {
+                "struggles": skill_levels.get(str(question.category_id), {}).get("current_streak",
+                                                                                 {}).get("incorrect", 0),
+                "successes": skill_levels.get(str(question.category_id), {}).get("correct", 0)
+            }
+        }
+
+        feedback = get_hybrid_claude_feedback(
+            player_name=user_profile.user.username,
+            player_response=player_response,
+            correct_answer=question.answer,
+            question=question.question_text,
+            question_category=question.category,
+            question_type="True/False",
+            player_level=player_level_category,
+            correct=correct,
+            past_performance=past_performance
+        )
+
+        print(f"Claude's Feedback: {feedback}")
 
         return {'status': 'success',
                 'message': f"Question ID: {question_id} answered. Score recorded for session ID: {session_id}."}, 201

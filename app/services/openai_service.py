@@ -1,3 +1,19 @@
+"""
+OpenAI Service Layer
+
+This module provides services for generating trivia questions using OpenAI's API. It interacts with the OpenAI API
+to create dynamic and engaging questions for users in the game application, based on specific prompts and categories.
+
+Key functionalities include:
+- Parsing AI-generated responses to extract trivia questions, correct answers, and incorrect options.
+- Ensuring generated questions are unique and do not repeat within the same session.
+- Adjusting question difficulty based on player performance and game progress.
+- Managing interactions with the OpenAI API and handling API-related errors.
+
+This service is essential for dynamically generating content that enhances user engagement and provides a tailored
+experience based on individual player progress and preferences.
+"""
+
 import openai
 import os
 from datetime import datetime
