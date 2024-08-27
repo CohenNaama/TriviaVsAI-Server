@@ -1,8 +1,22 @@
 # Trivia VS AI
 
+## Table of Contents
+- [Current Development Status](#current-development-status)
+- [Description](#description)
+- [Game Overview](#game-overview)
+  - [Key Features](#key-features)
+  - [Integration and Deployment](#integration-and-deployment)
+- [AI Integration](#ai-integration)
+- [Technology Stack](#technology-stack)
+- [Setup Instructions](#setup-instructions)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [File Upload Limits](#file-upload-limits)
+- [License](#license)
+
 ## Current Development Status
 
-**Note:** This application is currently in the early stages of development. As such, some functionalities and features are still under construction and may not be fully operational at this time. We are actively working to enhance and expand the application's capabilities, and we appreciate your understanding and patience as we continue to make improvements.
+**Note:** This application is currently in the development stages, with several functionalities now fully operational, including AI-generated feedback and player level management. We are continuously working to enhance and expand the application's capabilities.
 
 ## Description
 
@@ -18,23 +32,29 @@ Trivia VS AI is an innovative trivia game powered by artificial intelligence, of
   - Leverage OpenAI to generate a diverse range of trivia questions across multiple categories.
   - Ensure questions are unique and continuously updated to keep the game fresh.
 
-- **Real-Time Feedback:**
-  - Use Claude to provide immediate feedback on answers, explaining both correct and incorrect responses.
-  - Implement sentiment analysis to adjust difficulty and question types based on player engagement.
+- **Real-Time AI Feedback:**
+  - **Claude AI** generates immediate, personalized feedback on answers, explaining both correct and incorrect responses.
+  - Feedback adapts dynamically to player performance, considering correct/incorrect answers and past performance in specific categories.
 
-- **Adaptive Difficulty:**
-  - Gemini's technology adjusts question difficulty dynamically based on player performance and knowledge level.
-  - Offer personalized question sets to maintain challenge and engagement.
+- **Adaptive Difficulty and Player Progression:**
+  - **Gemini's technology** adjusts question difficulty dynamically based on player performance and knowledge level.
+  - Player experience points and levels are tracked and updated, providing a personalized difficulty curve and rewarding progress.
 
 - **Leaderboards and Social Features:**
   - Track player scores and display them on global leaderboards.
   - Enable social sharing and multiplayer modes for a competitive edge.
-
+  
 ### Integration and Deployment
 
 - **Backend:** Built with Flask to manage game state, player data, and a robust question database.
 - **Deployment:** Dockerized for scalability and reliability, ensuring smooth performance under load.
 - **User Interface:** Designed to be simple and engaging, providing a seamless gameplay experience.
+
+### AI Integration
+
+- **OpenAI**: Used to dynamically generate trivia questions. By leveraging GPT-3.5-turbo, the game provides an endless variety of unique and engaging questions that cover a broad range of topics, keeping the gameplay fresh and challenging.
+  
+- **Claude AI**: Integrated to deliver real-time, adaptive feedback based on player responses. Claude's insights help players learn from their mistakes, receive encouragement, and better understand the trivia content, creating a more engaging and educational experience.
 
 ## Technology Stack
 
@@ -75,10 +95,16 @@ pip install -r requirements.txt
 
 4. **Configure the environment variables:**
 
-   Create a .env file in the root directory and add the following:
+To run the application, you need to configure some environment variables. Create a `.env` file in the root directory of your project and add the following:
 ```
 SECRET_KEY=your_secret_key
 DATABASE_URL=postgresql://username:password@localhost/triviadb
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_claude_api_key
+
+POSTGRES_PASSWORD=your_postgres_password
+PGADMIN_DEFAULT_EMAIL=your_pgadmin_email
+PGADMIN_DEFAULT_PASSWORD=your_pgadmin_password
 ```
 
 5. **Initialize the database:**
@@ -94,6 +120,10 @@ flask run
 ```
 
    Access the application at http://127.0.0.1:5000.
+
+### File Upload Limits
+
+The application has a file upload limit set to 2MB. Ensure any files you upload comply with this restriction to avoid errors.
 
 ## License
 
