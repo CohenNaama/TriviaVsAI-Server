@@ -11,7 +11,6 @@ from app.dal.userProfile_dal import UserProfileDAL
 from app.middleware.helpers import save_profile_picture
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
-from app.models.userProfile import db
 
 
 def get_all_profiles():
@@ -110,8 +109,11 @@ LEVEL_THRESHOLDS = {
     1: 0,
     2: 50,
     3: 200,
-    4: 500,
-    5: 1000,
+    4: 400,
+    5: 600,
+    6: 850,
+    7: 1000,
+    8: 1200
 }
 
 

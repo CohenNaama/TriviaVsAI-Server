@@ -52,9 +52,11 @@ Trivia VS AI is an innovative trivia game powered by artificial intelligence, of
 
 ### AI Integration
 
-- **OpenAI**: Used to dynamically generate trivia questions. By leveraging GPT-3.5-turbo, the game provides an endless variety of unique and engaging questions that cover a broad range of topics, keeping the gameplay fresh and challenging.
+- **OpenAI**: Utilized to dynamically generate trivia questions using the GPT-3.5-turbo model. This integration allows the game to offer a limitless array of unique and engaging questions across various topics, ensuring the gameplay remains fresh, diverse, and challenging. OpenAI's capabilities provide a rich content base that adapts to different themes and player interests.
   
-- **Claude AI**: Integrated to deliver real-time, adaptive feedback based on player responses. Claude's insights help players learn from their mistakes, receive encouragement, and better understand the trivia content, creating a more engaging and educational experience.
+- **Claude AI**: Integrated to provide real-time, adaptive feedback based on player responses. Claude analyzes player input and delivers personalized feedback, helping players understand their mistakes, learn more effectively, and stay motivated. The feedback system is designed to encourage learning through reinforcement, making the trivia game not only fun but also educational.
+
+- **Gemini AI**: Employed for dynamically adjusting the game's difficulty based on player performance metrics and reinforcement learning techniques. By analyzing players' strengths, weaknesses, and response times, Gemini ensures that each player receives a personalized challenge level that is neither too easy nor too hard. This adaptive approach maintains engagement and promotes continuous improvement, offering a tailored experience that evolves with the player.
 
 ## Technology Stack
 
@@ -101,6 +103,7 @@ SECRET_KEY=your_secret_key
 DATABASE_URL=postgresql://username:password@localhost/triviadb
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_claude_api_key
+GOOGLE_API_KEY=your_gemini_api_key
 
 POSTGRES_PASSWORD=your_postgres_password
 PGADMIN_DEFAULT_EMAIL=your_pgadmin_email

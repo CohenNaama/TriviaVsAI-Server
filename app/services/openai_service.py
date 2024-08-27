@@ -18,12 +18,13 @@ import openai
 import os
 from datetime import datetime
 from app.logging_config import logger
-from app.models.question import Question, DifficultyLevel
+from app.models.question import Question
 from app.models.gameSession import GameSession
 from app.dal.question_dal import QuestionDAL
-from app.services.streaks_tracker import get_streaks
-from app.services.question_service import adjust_difficulty
+from app.models.userProfile import UserProfile
+from app.services.gemini_service import adjust_game_difficulty
 from app.services.category_service import select_category
+from app.services.gemini_service import gemini_cache
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
@@ -152,16 +153,24 @@ def create_question_for_session_service(user_id, session_id):
         if session is None:
             raise Exception(f"Session ID {session_id} not found.")
 
-        streak = get_streaks(user_id)
-        current_difficulty = DifficultyLevel.MEDIUM.value
+        # Check if there's a cached difficulty for this session
+        if session_id in gemini_cache:
+            adjusted_difficulty = gemini_cache[session_id]['difficulty']
+            print(f"Using cached difficulty level: {adjusted_difficulty}")
+        else:
+            # Use Gemini's recommendation to adjust difficulty
+            user_profile = UserProfile.query.filter_by(user_id=user_id).first()
+            if not user_profile:
+                raise Exception(f"User profile for ID {user_id} not found.")
 
-        adjusted_difficulty = adjust_difficulty(user_id, streak, current_difficulty)
+            # Call the new Gemini-based function
+            adjusted_difficulty = adjust_game_difficulty(session, user_profile)
 
         selected_category = select_category()
 
         prompt = (
             f"Generate a unique and interesting trivia question about {selected_category.name} "
-            f"at {adjusted_difficulty} level. Include a question, the correct answer, and "
+            f"at difficulty level {adjusted_difficulty}. Include a question, the correct answer, and "
             "three incorrect answers."
         )
 
@@ -172,7 +181,7 @@ def create_question_for_session_service(user_id, session_id):
 
         question_data.update({
             "category_id": selected_category.id,
-            "difficulty": DifficultyLevel[adjusted_difficulty.upper()],
+            "difficulty": adjusted_difficulty,
             "created_at": datetime.utcnow()
         })
 

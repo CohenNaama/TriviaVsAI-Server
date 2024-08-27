@@ -10,6 +10,8 @@ from datetime import datetime
 from app.dal.question_dal import QuestionDAL
 from app.logging_config import logger
 from sqlalchemy.exc import SQLAlchemyError
+from app.services.gemini_service import adjust_game_difficulty
+from app.services.openai_service import generate_trivia_question
 from app.services.streaks_tracker import streaks
 from app.models.gameSession import GameSession, db
 from app.models.question import DifficultyLevel
@@ -145,42 +147,30 @@ def update_streaks(user_id, correct):
     return streaks[user_id]
 
 
-def adjust_difficulty(user_id, streak, current_difficulty):
+def map_gemini_difficulty_to_enum(gemini_difficulty):
     """
-    Adjust the difficulty of the next question based on the user's performance,
-    considering both streaks and overall accuracy.
+    Maps the difficulty level suggested by Gemini to the predefined Enum difficulty levels.
 
     Args:
-        user_id (int): The ID of the user.
-        streak (dict): The player's current streaks, including 'correct_streak' and 'incorrect_streak'.
-        current_difficulty (str): The current difficulty level of questions.
+        gemini_difficulty (str or int): The difficulty level suggested by Gemini (e.g., 1, 2, ..., 10).
 
     Returns:
-        str: The adjusted difficulty level.
+        DifficultyLevel: The corresponding Enum value for the question's difficulty.
     """
-    if streak['correct_streak'] >= 5:
-        return increase_difficulty(current_difficulty)
-    elif streak['incorrect_streak'] >= 3:
-        return decrease_difficulty(current_difficulty)
-
-    user_sessions = GameSession.query.filter_by(user_id=user_id).all()
-    if not user_sessions:
-        return DifficultyLevel.EASY.value
-
-    correct_answers = sum(session.correct_answers for session in user_sessions)
-    total_questions = sum(session.total_questions for session in user_sessions)
-
-    if total_questions == 0:
-        return DifficultyLevel.EASY.value
-
-    accuracy = correct_answers / total_questions
-
-    if accuracy > 0.8:
-        return DifficultyLevel.HARD.value
-    elif accuracy > 0.5:
-        return DifficultyLevel.MEDIUM.value
+    if isinstance(gemini_difficulty, int):
+        # Example logic to map difficulty levels 1-10 to 'easy', 'medium', 'hard'
+        if gemini_difficulty <= 3:
+            return DifficultyLevel.EASY
+        elif 4 <= gemini_difficulty <= 7:
+            return DifficultyLevel.MEDIUM
+        else:
+            return DifficultyLevel.HARD
+    elif isinstance(gemini_difficulty, str):
+        # If difficulty is already a string like 'easy', 'medium', 'hard'
+        return DifficultyLevel[gemini_difficulty.upper()]
     else:
-        return DifficultyLevel.EASY.value
+        # Default to medium if the input is not recognized
+        return DifficultyLevel.MEDIUM
 
 
 def submit_answer_service(session_id, question_id, user_id, correct, player_response):
@@ -285,6 +275,22 @@ def submit_answer_service(session_id, question_id, user_id, correct, player_resp
                 "successes": skill_levels.get(str(question.category_id), {}).get("correct", 0)
             }
         }
+
+        # Adjust difficulty using Gemini
+        new_difficulty = adjust_game_difficulty(session, user_profile)
+        print(f"New difficulty level set by Gemini: {new_difficulty}")
+
+        # # Generate next question prompt
+        # next_question_prompt = (
+        #     f"Generate a unique and interesting trivia question at {new_difficulty} level. "
+        #     f"Include a question, the correct answer, and three incorrect answers."
+        # )
+        #
+        # next_question_data = generate_trivia_question(next_question_prompt)
+        #
+        # if next_question_data:
+        #     cache_next_question(session_id, next_question_data)
+        #     print(f"Cached next question for session {session_id}: {next_question_data}")
 
         feedback = get_hybrid_claude_feedback(
             player_name=user_profile.user.username,
